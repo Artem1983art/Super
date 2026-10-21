@@ -1,0 +1,357 @@
+```html
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>МетеоПро - Сучасний Прогноз Погоди</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        glass: {
+                            light: 'rgba(255, 255, 255, 0.25)',
+                            dark: 'rgba(15, 23, 42, 0.65)',
+                            card: 'rgba(255, 255, 255, 0.15)',
+                            border: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .glass-input {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Weather Dynamic Background Gradients */
+        .bg-clear-day { background: linear-gradient(135deg, #38ef7d 0%, #11998e 100%); }
+        .bg-clear-night { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); }
+        .bg-clouds-day { background: linear-gradient(135deg, #5433ff 0%, #20bdff 50%, #a5fecb 100%); }
+        .bg-clouds-night { background: linear-gradient(135deg, #232526 0%, #414345 100%); }
+        .bg-rain { background: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%); }
+        .bg-snow { background: linear-gradient(135deg, #83a4d4 0%, #b6fbff 100%); }
+        .bg-thunder { background: linear-gradient(135deg, #141e30 0%, #243b55 100%); }
+        .bg-fog { background: linear-gradient(135deg, #606c88 0%, #3f4c6b 100%); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 text-white font-sans transition-all duration-700 p-3 sm:p-6 flex flex-col justify-between" id="appBody">
+
+    <!-- Container -->
+    <div class="max-w-5xl mx-auto w-full flex-grow flex flex-col">
+        
+        <!-- Header & Search Bar -->
+        <header class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+            <!-- App Title & Logo -->
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid font-bold fa-cloud-sun text-yellow-300 text-3xl animate-pulse-slow"></i>
+                    <h1 class="text-2xl font-bold tracking-wide">Метео<span class="text-yellow-300">Про</span></h1>
+                </div>
+
+                <!-- GPS & Settings Controls on Mobile -->
+                <div class="flex items-center space-x-2 sm:hidden">
+                    <button id="gpsBtnMobile" title="Визначити місцезнаходження" class="p-2.5 rounded-full glass-panel hover:bg-white/20 transition active:scale-95 text-white">
+                        <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                    </button>
+                    <button id="unitToggleMobile" title="Переключити одиницю вимірювання" class="px-3 py-1.5 rounded-full glass-panel hover:bg-white/20 transition font-semibold text-sm">
+                        °C
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Box & Buttons -->
+            <div class="w-full sm:w-auto flex-1 max-w-lg relative">
+                <form id="searchForm" class="relative flex items-center">
+                    <input type="text" id="searchInput" placeholder="Пошук будь-якого міста чи селища у світі..." 
+                        class="w-full pl-11 pr-12 py-3 rounded-2xl glass-input text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm sm:text-base shadow-inner transition-all"
+                        autocomplete="off">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 text-white/70 text-lg"></i>
+                    <button type="submit" class="absolute right-3 p-1.5 rounded-xl hover:bg-white/20 transition">
+                        <i class="fa-solid fa-arrow-right text-white/90"></i>
+                    </button>
+                </form>
+                <!-- Autocomplete Dropdown -->
+                <div id="searchResults" class="hidden absolute top-full left-0 right-0 mt-2 glass-panel rounded-2xl overflow-hidden shadow-2xl z-50 divide-y divide-white/10 max-h-72 overflow-y-auto"></div>
+            </div>
+
+            <!-- Desktop Controls -->
+            <div class="hidden sm:flex items-center space-x-3">
+                <button id="gpsBtn" title="Перевизначити Моє Місцезнаходження (GPS)" class="flex items-center space-x-2 px-4 py-2.5 rounded-xl glass-panel hover:bg-white/20 transition active:scale-95 text-sm font-medium">
+                    <i class="fa-solid fa-location-crosshairs text-yellow-300"></i>
+                    <span>Моє місто</span>
+                </button>
+                <button id="unitToggle" title="Переключити °C / °F" class="px-4 py-2.5 rounded-xl glass-panel hover:bg-white/20 transition font-bold text-sm">
+                    °C
+                </button>
+            </div>
+        </header>
+
+        <!-- Notification Banner / Loading Indicator -->
+        <div id="statusMessage" class="hidden mb-6 p-4 rounded-2xl glass-panel text-center text-sm font-medium animate-pulse flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-spinner animate-spin"></i>
+            <span id="statusText">Отримання даних геопозиції...</span>
+        </div>
+
+        <!-- Main Content Grid -->
+        <main id="weatherContainer" class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+
+            <!-- Left / Main Card: Current Weather -->
+            <div class="lg:col-span-2 glass-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
+                <!-- Background decorative graphic -->
+                <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+                    <i id="bgIcon" class="fa-solid fa-sun text-[220px]"></i>
+                </div>
+
+                <!-- Top Row: Location & Date -->
+                <div class="flex justify-between items-start z-10">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-location-dot text-red-400"></i>
+                            <h2 id="cityName" class="text-2xl sm:text-4xl font-bold tracking-tight">Завантаження...</h2>
+                        </div>
+                        <p id="countryName" class="text-white/80 text-sm sm:text-base mt-1 font-medium">Пошук координат...</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="currentDate" class="text-sm sm:text-base font-semibold">Сьогодні</p>
+                        <p id="currentTime" class="text-xs sm:text-sm text-white/70">--:--</p>
+                    </div>
+                </div>
+
+                <!-- Middle Row: Temperature & Icon -->
+                <div class="my-8 flex flex-col sm:flex-row items-center justify-between gap-6 z-10">
+                    <div class="flex items-center space-x-6">
+                        <div id="weatherIconContainer" class="text-6xl sm:text-8xl text-yellow-300 animate-float drop-shadow-lg">
+                            <i class="fa-solid fa-sun"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-start">
+                                <span id="currentTemp" class="text-6xl sm:text-8xl font-extrabold tracking-tighter">--</span>
+                                <span id="unitSymbol" class="text-2xl sm:text-4xl font-light mt-2">°C</span>
+                            </div>
+                            <p id="weatherDesc" class="text-lg sm:text-xl capitalize font-medium text-white/90">Завантаження...</p>
+                        </div>
+                    </div>
+
+                    <!-- Min/Max Temp Badge -->
+                    <div class="flex sm:flex-col gap-3 glass-panel px-4 py-3 rounded-2xl text-center sm:text-right w-full sm:w-auto justify-around">
+                        <div>
+                            <span class="text-xs text-white/70 block uppercase tracking-wider">Макс.</span>
+                            <span id="maxTemp" class="font-bold text-lg text-red-300">--°</span>
+                        </div>
+                        <div class="sm:border-t sm:border-white/20 sm:pt-2">
+                            <span class="text-xs text-white/70 block uppercase tracking-wider">Мін.</span>
+                            <span id="minTemp" class="font-bold text-lg text-blue-300">--°</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hourly Forecast Carousel -->
+                <div class="z-10 mt-2">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-white/80 mb-3 flex items-center space-x-2">
+                        <i class="fa-regular fa-clock"></i>
+                        <span>Погодинний прогноз</span>
+                    </h3>
+                    <div id="hourlyForecast" class="flex space-x-4 overflow-x-auto pb-2 pt-1 no-scrollbar">
+                        <!-- Dynamic Hourly Items will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Weather Highlights & Details -->
+            <div class="flex flex-col space-y-6">
+                
+                <!-- Detailed Cards Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Humidity Card -->
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-white/70 mb-2">
+                            <span class="text-xs uppercase font-semibold">Вологість</span>
+                            <i class="fa-solid fa-droplet text-blue-300"></i>
+                        </div>
+                        <p id="humidityVal" class="text-2xl font-bold">--%</p>
+                        <p id="humidityDesc" class="text-xs text-white/70 mt-1">Оптимальна</p>
+                    </div>
+
+                    <!-- Wind Speed Card -->
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-white/70 mb-2">
+                            <span class="text-xs uppercase font-semibold">Вітер</span>
+                            <i class="fa-solid fa-wind text-teal-300"></i>
+                        </div>
+                        <p id="windVal" class="text-2xl font-bold">-- км/год</p>
+                        <p id="windDir" class="text-xs text-white/70 mt-1">Напрямок: --</p>
+                    </div>
+
+                    <!-- UV Index Card -->
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-white/70 mb-2">
+                            <span class="text-xs uppercase font-semibold">УФ-Індекс</span>
+                            <i class="fa-solid fa-sun text-yellow-300"></i>
+                        </div>
+                        <p id="uvVal" class="text-2xl font-bold">--</p>
+                        <p id="uvDesc" class="text-xs text-white/70 mt-1">Низький</p>
+                    </div>
+
+                    <!-- Pressure Card -->
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between text-white/70 mb-2">
+                            <span class="text-xs uppercase font-semibold">Тиск</span>
+                            <i class="fa-solid fa-gauge-high text-purple-300"></i>
+                        </div>
+                        <p id="pressureVal" class="text-2xl font-bold">-- мм</p>
+                        <p id="pressureDesc" class="text-xs text-white/70 mt-1">Нормальний</p>
+                    </div>
+                </div>
+
+                <!-- Sun Cycle Card -->
+                <div class="glass-panel p-4 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-3 rounded-xl bg-amber-400/20 text-amber-300">
+                            <i class="fa-solid fa-sun text-xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-white/70 uppercase font-semibold block">Схід сонця</span>
+                            <span id="sunriseVal" class="font-bold text-base">--:--</span>
+                        </div>
+                    </div>
+                    <div class="h-8 w-[1px] bg-white/20"></div>
+                    <div class="flex items-center space-x-3">
+                        <div class="p-3 rounded-xl bg-indigo-400/20 text-indigo-300">
+                            <i class="fa-solid fa-moon text-xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs text-white/70 uppercase font-semibold block">Захід сонця</span>
+                            <span id="sunsetVal" class="font-bold text-base">--:--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7-Day Forecast Card -->
+                <div class="glass-panel rounded-2xl p-5 flex-1 flex flex-col justify-between">
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-white/80 mb-3 flex items-center space-x-2">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        <span>Прогноз на 7 днів</span>
+                    </h3>
+                    <div id="dailyForecast" class="space-y-3">
+                        <!-- Dynamic 7-day Forecast Items -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-xs text-white/60 py-2">
+            <p>Дані надані Open-Meteo & GPS Geolocation API. Зроблено з <i class="fa-solid fa-heart text-red-400"></i></p>
+        </footer>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // App State
+        const state = {
+            units: 'metric', // 'metric' (°C, km/h) or 'imperial' (°F, mph)
+            lat: null,
+            lon: null,
+            cityName: '',
+            countryName: '',
+            weatherData: null,
+            searchDebounceTimeout: null
+        };
+
+        // Weather Code Mapping for WMO Weather Interpretation Codes (Ukrainian Translation)
+        const weatherCodes = {
+            0: { desc: "Ясно", icon: "fa-sun", bgClass: "bg-clear-day", nightIcon: "fa-moon" },
+            1: { desc: "Переважно ясно", icon: "fa-cloud-sun", bgClass: "bg-clear-day", nightIcon: "fa-cloud-moon" },
+            2: { desc: "Мінлива хмарність", icon: "fa-cloud-sun", bgClass: "bg-clouds-day", nightIcon: "fa-cloud-moon" },
+            3: { desc: "Хмарно", icon: "fa-cloud", bgClass: "bg-clouds-day", nightIcon: "fa-cloud" },
+            45: { desc: "Туман", icon: "fa-smog", bgClass: "bg-fog", nightIcon: "fa-smog" },
+            48: { desc: "Паморозь", icon: "fa-smog", bgClass: "bg-fog", nightIcon: "fa-smog" },
+            51: { desc: "Легка мряка", icon: "fa-cloud-rain", bgClass: "bg-rain", nightIcon: "fa-cloud-rain" },
+            53: { desc: "Помірна мряка", icon: "fa-cloud-rain", bgClass: "bg-rain", nightIcon: "fa-cloud-rain" },
+            55: { desc: "Густа мряка", icon: "fa-cloud-showers-heavy", bgClass: "bg-rain", nightIcon: "fa-cloud-showers-heavy" },
+            61: { desc: "Невеликий дощ", icon: "fa-cloud-rain", bgClass: "bg-rain", nightIcon: "fa-cloud-rain" },
+            63: { desc: "Помірний дощ", icon: "fa-cloud-showers-heavy", bgClass: "bg-rain", nightIcon: "fa-cloud-showers-heavy" },
+            65: { desc: "Сильний дощ", icon: "fa-cloud-showers-water", bgClass: "bg-rain", nightIcon: "fa-cloud-showers-water" },
+            71: { desc: "Невеликий сніг", icon: "fa-snowflake", bgClass: "bg-snow", nightIcon: "fa-snowflake" },
+            73: { desc: "Помірний сніг", icon: "fa-snowflake", bgClass: "bg-snow", nightIcon: "fa-snowflake" },
+            75: { desc: "Сильний снігопад", icon: "fa-snowflake", bgClass: "bg-snow", nightIcon: "fa-snowflake" },
+            77: { desc: "Сніжні крупи", icon: "fa-snowflake", bgClass: "bg-snow", nightIcon: "fa-snowflake" },
+            80: { desc: "Злива", icon: "fa-cloud-showers-heavy", bgClass: "bg-rain", nightIcon: "fa-cloud-showers-heavy" },
+            81: { desc: "Сильна злива", icon: "fa-cloud-showers-water", bgClass: "bg-rain", nightIcon: "fa-cloud-showers-water" },
+            82: { desc: "Шквальна злива", icon: "fa-cloud-showers-water", bgClass: "bg-rain", nightIcon: "fa-cloud-showers-water" },
+            85: { desc: "Снігопад", icon: "fa-snowflake", bgClass: "bg-snow", nightIcon: "fa-snowflake" },
+            86: { desc: "Сильний снігопад", icon: "fa-snowflake", bgClass: "bg-snow", nightIcon: "fa-snowflake" },
+            95: { desc: "Гроза", icon: "fa-bolt-lightning", bgClass: "bg-thunder", nightIcon: "fa-bolt-lightning" },
+            96: { desc: "Гроза з невеликим градом", icon: "fa-cloud-bolt", bgClass: "bg-thunder", nightIcon: "fa-cloud-bolt" },
+            99: { desc: "Гроза з сильним градом", icon: "fa-cloud-bolt", bgClass: "bg-thunder", nightIcon: "fa-cloud-bolt" }
+        };
+
+        // DOM Elements
+        const elements = {
+       
