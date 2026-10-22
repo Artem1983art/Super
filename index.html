@@ -84,7 +84,7 @@
 
   <div class="upload-modal" id="uploadModal">
     <div class="modal-content">
-      <h3>Додати відео через бота</h3>
+      <h3>Додати відео</h3>
       <input type="text" id="videoTitle" placeholder="Назва відео">
       <select id="videoType">
         <option value="regular">Звичайне відео</option>
@@ -100,9 +100,6 @@
   </div>
 
   <script>
-    // Ваш новий актуальний токен бота
-    const BOT_TOKEN = '8974978246:AAFn8AXLgtjnQZZO5hpQAJdmkdoM35HPe6s';
-    
     let videos = JSON.parse(localStorage.getItem('yv_videos') || '[]');
     let currentTab = 'regular';
     let activeShortCommentsIndex = null;
@@ -338,25 +335,33 @@
       }
 
       btnUpload.disabled = true;
-      statusText.innerText = 'Додавання відео...';
+      statusText.innerText = 'Конвертація відео...';
 
-      // Використовуємо локальний потік для відтворення та зберігаємо в пам'ять браузера
-      const localUrl = URL.createObjectURL(file);
-      videos.unshift({ 
-        title, 
-        type, 
-        url: localUrl, 
-        likes: 0, 
-        dislikes: 0, 
-        comments: [] 
-      });
-      
-      saveState();
-      closeModal();
-      render();
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        videos.unshift({ 
+          title, 
+          type, 
+          url: base64Data, 
+          likes: 0, 
+          dislikes: 0, 
+          comments: [] 
+        });
+        
+        saveState();
+        closeModal();
+        render();
 
-      btnUpload.disabled = false;
-      statusText.innerText = '';
+        btnUpload.disabled = false;
+        statusText.innerText = '';
+      };
+      reader.onerror = function() {
+        alert('Помилка читання файлу');
+        btnUpload.disabled = false;
+        statusText.innerText = '';
+      };
+      reader.readAsDataURL(file);
     }
 
     function openModal() { document.getElementById('uploadModal').style.display = 'flex'; }
